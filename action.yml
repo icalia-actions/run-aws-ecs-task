@@ -1,0 +1,31 @@
+name: Run AWS ECS Task
+description: Runs a task in AWS ECS
+
+branding:
+  icon: activity
+  color: red
+
+inputs:
+  cluster:
+    description: The AWS ECS cluster where we should run the task
+    required: true
+  task-definition-name:
+    description: The name of the AWS ECS task definition
+    required: true
+  task-definition-template-path:
+    description: The path to the AWS ECS Task Definition template to use
+    required: true
+  container-images:
+    description: A JSON map of containers and their respective images to use
+    required: false
+  environment-vars:
+    description: A JSON map of environment variables that will be replaced in the template (on all containers)
+    required: false
+
+outputs:
+  task-definition-arn:
+    description: The registered Task Definition ARN
+
+runs:
+  using: node12
+  main: dist/index.js
