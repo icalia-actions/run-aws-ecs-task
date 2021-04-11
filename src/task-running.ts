@@ -41,7 +41,7 @@ function processRunTaskInput(input: RunTaskInput): RunTaskRequest {
   return runTaskRequest;
 }
 
-export async function getTaskStatus(
+export async function describeTask(
   cluster: string,
   taskArn: string
 ): Promise<Task> {

@@ -5,7 +5,7 @@ import {
   TaskRegistrationInput,
 } from "@icalialabs/register-aws-ecs-task-definition";
 
-import { getTaskStatus, runTask, RunTaskInput } from "./task-running";
+import { describeTask, runTask, RunTaskInput } from "./task-running";
 
 function sleep(seconds: number): Promise<NodeJS.Timeout> {
   const milliseconds = seconds * 1000;
@@ -53,7 +53,7 @@ export async function run(): Promise<number> {
       await sleep(10);
     }
 
-    ({ lastStatus, stopCode, containers } = await getTaskStatus(
+    ({ lastStatus, stopCode, containers } = await describeTask(
       cluster,
       task.taskArn
     ));
