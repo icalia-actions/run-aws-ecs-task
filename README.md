@@ -13,6 +13,9 @@ Runs a Task in AWS ECS
           # The name of the task to run - it will also be used as the name of
           # the task definition:
           name: my-cool-task
+
+          # You may optionally wait until the task finishes (defaults to false)
+          wait-to-completion: true
           
           # The template for the task - i.e. the json/yaml used when running
           # `aws ecs run-task --cli-input-yaml file://templates/ecs/my-task.yml`
