@@ -1,6 +1,6 @@
 {
   "name": "@icalialabs/run-aws-ecs-task",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Runs a Task in AWS ECS",
   "main": "lib/main.js",
   "scripts": {
