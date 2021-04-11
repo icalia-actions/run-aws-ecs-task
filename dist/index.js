@@ -64,7 +64,7 @@ function run() {
                 core_1.info("Waiting 10 seconds for next update...");
                 yield sleep(10);
             }
-            ({ lastStatus, stopCode, containers } = yield task_running_1.getTaskStatus(cluster, task.taskArn));
+            ({ lastStatus, stopCode, containers } = yield task_running_1.describeTask(cluster, task.taskArn));
             core_1.info(`Last Status: ${lastStatus}`);
         } while (stopCode == null);
         core_1.info(`Stop Code: ${stopCode}`);
@@ -95,6 +95,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__nccwpck_require__(7368), exports);
 __exportStar(__nccwpck_require__(9139), exports);
 //# sourceMappingURL=main.js.map
 
@@ -137,7 +138,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.runTask = exports.getTaskStatus = void 0;
+exports.runTask = exports.describeTask = void 0;
 const fs = __importStar(__nccwpck_require__(5747));
 const yaml_1 = __nccwpck_require__(3552);
 const ecs_1 = __importDefault(__nccwpck_require__(6615));
@@ -162,7 +163,7 @@ function processRunTaskInput(input) {
         readRunTaskRequestTemplate(templatePath, runTaskRequest);
     return runTaskRequest;
 }
-function getTaskStatus(cluster, taskArn) {
+function describeTask(cluster, taskArn) {
     return __awaiter(this, void 0, void 0, function* () {
         const ecs = getClient();
         const { tasks } = yield ecs
@@ -177,7 +178,7 @@ function getTaskStatus(cluster, taskArn) {
         return task;
     });
 }
-exports.getTaskStatus = getTaskStatus;
+exports.describeTask = describeTask;
 function runTask(input) {
     return __awaiter(this, void 0, void 0, function* () {
         const ecs = getClient();
