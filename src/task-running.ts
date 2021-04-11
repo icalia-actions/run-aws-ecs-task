@@ -1,7 +1,11 @@
 import * as fs from "fs";
 import { parse } from "yaml";
 
-import ECS, { Task, RunTaskRequest } from "aws-sdk/clients/ecs";
+import ECS, {
+  Task,
+  RunTaskRequest,
+  DescribeTasksRequest,
+} from "aws-sdk/clients/ecs";
 
 export interface RunTaskInput {
   taskDefinition: string;
@@ -35,6 +39,24 @@ function processRunTaskInput(input: RunTaskInput): RunTaskRequest {
   if (templatePath) readRunTaskRequestTemplate(templatePath, runTaskRequest);
 
   return runTaskRequest;
+}
+
+export async function getTaskStatus(
+  cluster: string,
+  taskArn: string
+): Promise<Task> {
+  const ecs = getClient();
+  const { tasks } = await ecs
+    .describeTasks({
+      cluster,
+      tasks: [taskArn],
+    } as DescribeTasksRequest)
+    .promise();
+
+  const task = tasks?.pop();
+  if (!task) throw new Error("No task was found");
+
+  return task;
 }
 
 export async function runTask(input: RunTaskInput): Promise<Task> {

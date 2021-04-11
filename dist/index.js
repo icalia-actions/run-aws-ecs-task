@@ -21,9 +21,17 @@ exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
 const register_aws_ecs_task_definition_1 = __nccwpck_require__(3686);
 const task_running_1 = __nccwpck_require__(7368);
+function sleep(seconds) {
+    const milliseconds = seconds * 1000;
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
 function run() {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const name = core_1.getInput("name");
+        if (!name)
+            throw new Error("'name' is required");
+        const cluster = core_1.getInput("cluster") || "default";
         core_1.info(`Registering task definition '${name}'...`);
         const { taskDefinitionArn } = yield register_aws_ecs_task_definition_1.registerTaskDefinition({
             family: name,
@@ -35,18 +43,35 @@ function run() {
             throw new Error("Task definition failed to register");
         core_1.info(`Launching task '${name}'...`);
         const task = yield task_running_1.runTask({
-            cluster: core_1.getInput("cluster"),
+            cluster,
             taskDefinition: taskDefinitionArn,
             templatePath: core_1.getInput("template"),
         });
-        if (!task)
+        if (!task || !task.taskArn)
             throw new Error("Task failed to launch");
         core_1.info("Task Run Details:");
         core_1.info(`             Task ARN: ${task.taskArn}`);
         core_1.info(`  Task Definition ARN: ${task.taskDefinitionArn}`);
         core_1.info("");
-        core_1.setOutput("task-definition-arn", taskDefinitionArn);
-        return 0;
+        core_1.setOutput("task-definition-arn", task.taskDefinitionArn);
+        core_1.setOutput("task-arn", task.taskArn);
+        const waitToCompletion = core_1.getInput("wait-to-completion") == "true";
+        if (!waitToCompletion)
+            return 0;
+        let lastStatus, stopCode, containers;
+        do {
+            if (typeof lastStatus !== "undefined") {
+                core_1.info("Waiting 10 seconds for next update...");
+                yield sleep(10);
+            }
+            ({ lastStatus, stopCode, containers } = yield task_running_1.getTaskStatus(cluster, task.taskArn));
+            core_1.info(`Last Status: ${lastStatus}`);
+        } while (stopCode == null);
+        core_1.info(`Stop Code: ${stopCode}`);
+        const exitCode = (_a = containers === null || containers === void 0 ? void 0 : containers.pop()) === null || _a === void 0 ? void 0 : _a.exitCode;
+        core_1.info(`Exit Code: ${exitCode}`);
+        // Si no hay exit code en éste punto, la tarea falló:
+        return typeof exitCode == "undefined" || exitCode == null ? 1 : exitCode;
     });
 }
 exports.run = run;
@@ -112,7 +137,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.runTask = void 0;
+exports.runTask = exports.getTaskStatus = void 0;
 const fs = __importStar(__nccwpck_require__(5747));
 const yaml_1 = __nccwpck_require__(3552);
 const ecs_1 = __importDefault(__nccwpck_require__(6615));
@@ -137,6 +162,22 @@ function processRunTaskInput(input) {
         readRunTaskRequestTemplate(templatePath, runTaskRequest);
     return runTaskRequest;
 }
+function getTaskStatus(cluster, taskArn) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const ecs = getClient();
+        const { tasks } = yield ecs
+            .describeTasks({
+            cluster,
+            tasks: [taskArn],
+        })
+            .promise();
+        const task = tasks === null || tasks === void 0 ? void 0 : tasks.pop();
+        if (!task)
+            throw new Error("No task was found");
+        return task;
+    });
+}
+exports.getTaskStatus = getTaskStatus;
 function runTask(input) {
     return __awaiter(this, void 0, void 0, function* () {
         const ecs = getClient();
