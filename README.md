@@ -6,10 +6,23 @@ Runs a Task in AWS ECS
 
 ```yaml
       - name: Run AWS ECS Task
-        uses: icalia-actions/run-aws-ecs-task@v0.0.1
+        uses: icalia-actions/run-aws-ecs-task@v0.0.2
         with:
           cluster: my-cluster
-          template-path: templates/ecs/my-task-definition.yml
+          
+          # The name of the task to run - it will also be used as the name of
+          # the task definition:
+          name: my-cool-task
+
+          # You may optionally wait until the task finishes (defaults to false)
+          wait-to-completion: true
+          
+          # The template for the task - i.e. the json/yaml used when running
+          # `aws ecs run-task --cli-input-yaml file://templates/ecs/my-task.yml`
+          template: templates/ecs/my-task.yml
+
+          # You can optionally set the task definition template:
+          definition-template: templates/ecs/my-task-definition.yml
 
           # You can override the image used on any container - the most common
           # use case is to deploy an image built & pushed on a previous step:
