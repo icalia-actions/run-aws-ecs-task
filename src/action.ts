@@ -5,20 +5,31 @@ import {
   TaskRegistrationInput,
 } from "@icalialabs/register-aws-ecs-task-definition";
 
+import { runTask, RunTaskInput } from "./task-running";
+
 export async function run(): Promise<number> {
-  const taskDefinitionName = getInput('task-definition-name')
+  const name = getInput("name");
 
-  info(`Registering task definition '${taskDefinitionName}'...`);
+  info(`Registering task definition '${name}'...`);
   const { taskDefinitionArn } = await registerTaskDefinition({
-    family: taskDefinitionName,
-    templatePath: getInput('task-definition-template-path'),
-    containerImages: JSON.parse(getInput('container-images') || 'null'),
-    environmentVars: JSON.parse(getInput('environment-vars') || 'null'),
-  } as TaskRegistrationInput)
-  if (!taskDefinitionArn) throw new Error('Task definition failed to register')
+    family: name,
+    templatePath: getInput("definition-template"),
+    containerImages: JSON.parse(getInput("container-images") || "null"),
+    environmentVars: JSON.parse(getInput("environment-vars") || "null"),
+  } as TaskRegistrationInput);
+  if (!taskDefinitionArn) throw new Error("Task definition failed to register");
 
-  info("Task Definition Registration Details:");
-  info(`  Task Definition ARN: ${taskDefinitionArn}`);
+  info(`Launching task '${name}'...`);
+  const task = await runTask({
+    cluster: getInput("cluster"),
+    taskDefinition: taskDefinitionArn,
+    templatePath: getInput("template"),
+  } as RunTaskInput);
+  if (!task) throw new Error("Task failed to launch");
+
+  info("Task Run Details:");
+  info(`             Task ARN: ${task.taskArn}`);
+  info(`  Task Definition ARN: ${task.taskDefinitionArn}`);
   info("");
 
   setOutput("task-definition-arn", taskDefinitionArn);

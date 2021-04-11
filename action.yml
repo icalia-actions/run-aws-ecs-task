@@ -9,12 +9,15 @@ inputs:
   cluster:
     description: The AWS ECS cluster where we should run the task
     required: true
-  task-definition-name:
-    description: The name of the AWS ECS task definition
+  name:
+    description: The name of the AWS ECS Task
     required: true
-  task-definition-template-path:
+  template:
+    description: The template used to run the task (i.e. --cli-input-json | --cli-input-yaml)
+    required: false
+  definition-template:
     description: The path to the AWS ECS Task Definition template to use
-    required: true
+    required: false
   container-images:
     description: A JSON map of containers and their respective images to use
     required: false

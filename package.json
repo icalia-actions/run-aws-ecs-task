@@ -4,7 +4,7 @@
   "description": "Runs a Task in AWS ECS",
   "main": "lib/main.js",
   "scripts": {
-    "debug": "ts-node -r dotenv/config src/main.ts",
+    "debug-action": "yarn run build && node -r dotenv/config index.js",
     "build": "tsc && ncc build",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",

@@ -2,7 +2,7 @@ module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 3109:
+/***/ 9139:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -17,31 +17,139 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
 const register_aws_ecs_task_definition_1 = __nccwpck_require__(3686);
+const task_running_1 = __nccwpck_require__(7368);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const taskRegistrationInput = {
-            family: core_1.getInput("family"),
-            templatePath: core_1.getInput("template-path"),
+        const name = core_1.getInput("name");
+        core_1.info(`Registering task definition '${name}'...`);
+        const { taskDefinitionArn } = yield register_aws_ecs_task_definition_1.registerTaskDefinition({
+            family: name,
+            templatePath: core_1.getInput("definition-template"),
             containerImages: JSON.parse(core_1.getInput("container-images") || "null"),
             environmentVars: JSON.parse(core_1.getInput("environment-vars") || "null"),
-        };
-        core_1.info(`Registering task definition '${taskRegistrationInput.family}'...`);
-        const { taskDefinitionArn } = yield register_aws_ecs_task_definition_1.registerTaskDefinition(taskRegistrationInput);
+        });
         if (!taskDefinitionArn)
             throw new Error("Task definition failed to register");
-        core_1.info("Task Definition Registration Details:");
-        core_1.info(`  Task Definition ARN: ${taskDefinitionArn}`);
+        core_1.info(`Launching task '${name}'...`);
+        const task = yield task_running_1.runTask({
+            cluster: core_1.getInput("cluster"),
+            taskDefinition: taskDefinitionArn,
+            templatePath: core_1.getInput("template"),
+        });
+        if (!task)
+            throw new Error("Task failed to launch");
+        core_1.info("Task Run Details:");
+        core_1.info(`             Task ARN: ${task.taskArn}`);
+        core_1.info(`  Task Definition ARN: ${task.taskDefinitionArn}`);
         core_1.info("");
         core_1.setOutput("task-definition-arn", taskDefinitionArn);
         return 0;
     });
 }
-run()
-    .then((status) => process.exit(status))
-    .catch((error) => core_1.setFailed(error.message));
+exports.run = run;
+//# sourceMappingURL=action.js.map
+
+/***/ }),
+
+/***/ 3109:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__nccwpck_require__(9139), exports);
 //# sourceMappingURL=main.js.map
+
+/***/ }),
+
+/***/ 7368:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.runTask = void 0;
+const fs = __importStar(__nccwpck_require__(5747));
+const yaml_1 = __nccwpck_require__(3552);
+const ecs_1 = __importDefault(__nccwpck_require__(6615));
+function getClient() {
+    return new ecs_1.default({
+        customUserAgent: "icalia-actions/aws-action",
+        region: process.env.AWS_DEFAULT_REGION,
+    });
+}
+function readRunTaskRequestTemplate(templatePath, runTaskRequest) {
+    if (!templatePath || !fs.existsSync(templatePath))
+        return;
+    const templateData = yaml_1.parse(fs.readFileSync(templatePath, "utf8"));
+    Object.assign(runTaskRequest, templateData);
+}
+function processRunTaskInput(input) {
+    const { cluster, taskDefinition, templatePath } = input;
+    let runTaskRequest = { taskDefinition };
+    if (cluster)
+        runTaskRequest.cluster = cluster;
+    if (templatePath)
+        readRunTaskRequestTemplate(templatePath, runTaskRequest);
+    return runTaskRequest;
+}
+function runTask(input) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const ecs = getClient();
+        const taskRunRequest = processRunTaskInput(input);
+        const { tasks } = yield ecs.runTask(taskRunRequest).promise();
+        const task = tasks === null || tasks === void 0 ? void 0 : tasks.pop();
+        if (!task)
+            throw new Error("No task was executed");
+        return task;
+    });
+}
+exports.runTask = runTask;
+//# sourceMappingURL=task-running.js.map
 
 /***/ }),
 
@@ -438,21 +546,11 @@ exports.toCommandValue = toCommandValue;
 
 /***/ }),
 
-/***/ 3686:
+/***/ 7506:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -463,9 +561,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
 const task_definition_registration_1 = __nccwpck_require__(305);
-__exportStar(__nccwpck_require__(305), exports);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const taskRegistrationInput = {
@@ -485,9 +583,29 @@ function run() {
         return 0;
     });
 }
-run()
-    .then((status) => process.exit(status))
-    .catch((error) => core_1.setFailed(error.message));
+exports.run = run;
+//# sourceMappingURL=action.js.map
+
+/***/ }),
+
+/***/ 3686:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__nccwpck_require__(7506), exports);
+__exportStar(__nccwpck_require__(305), exports);
 //# sourceMappingURL=main.js.map
 
 /***/ }),
