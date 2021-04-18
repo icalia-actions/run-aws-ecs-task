@@ -1,5 +1,6 @@
 name: Run AWS ECS Task
 description: Runs a task in AWS ECS
+author: Icalia Labs
 
 branding:
   icon: activity
