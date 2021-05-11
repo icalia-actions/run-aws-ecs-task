@@ -35,7 +35,7 @@ function run() {
         core_1.info(`Registering task definition '${name}'...`);
         const { taskDefinitionArn } = yield register_aws_ecs_task_definition_1.registerTaskDefinition({
             family: name,
-            templatePath: core_1.getInput("definition-template"),
+            template: core_1.getInput("definition-template"),
             secrets: JSON.parse(core_1.getInput("secrets") || "null"),
             containerImages: JSON.parse(core_1.getInput("container-images") || "null"),
             environmentVars: JSON.parse(core_1.getInput("environment-vars") || "null"),

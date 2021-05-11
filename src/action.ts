@@ -19,9 +19,10 @@ export async function run(): Promise<number> {
   const cluster = getInput("cluster") || "default";
 
   info(`Registering task definition '${name}'...`);
+
   const { taskDefinitionArn } = await registerTaskDefinition({
     family: name,
-    templatePath: getInput("definition-template"),
+    template: getInput("definition-template"),
     secrets: JSON.parse(getInput("secrets") || "null"),
     containerImages: JSON.parse(getInput("container-images") || "null"),
     environmentVars: JSON.parse(getInput("environment-vars") || "null"),
