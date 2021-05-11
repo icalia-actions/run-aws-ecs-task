@@ -36,6 +36,7 @@ function run() {
         const { taskDefinitionArn } = yield register_aws_ecs_task_definition_1.registerTaskDefinition({
             family: name,
             templatePath: core_1.getInput("definition-template"),
+            secrets: JSON.parse(core_1.getInput("secrets") || "null"),
             containerImages: JSON.parse(core_1.getInput("container-images") || "null"),
             environmentVars: JSON.parse(core_1.getInput("environment-vars") || "null"),
         });
@@ -608,14 +609,15 @@ const core_1 = __nccwpck_require__(2186);
 const task_definition_registration_1 = __nccwpck_require__(305);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const taskRegistrationInput = {
-            family: core_1.getInput("family"),
-            templatePath: core_1.getInput("template-path"),
+        const family = core_1.getInput("family");
+        core_1.info(`Registering task definition '${family}'...`);
+        const { taskDefinitionArn } = yield task_definition_registration_1.registerTaskDefinition({
+            family,
+            template: core_1.getInput("template"),
+            secrets: JSON.parse(core_1.getInput("secrets") || "null"),
             containerImages: JSON.parse(core_1.getInput("container-images") || "null"),
             environmentVars: JSON.parse(core_1.getInput("environment-vars") || "null"),
-        };
-        core_1.info(`Registering task definition '${taskRegistrationInput.family}'...`);
-        const { taskDefinitionArn } = yield task_definition_registration_1.registerTaskDefinition(taskRegistrationInput);
+        });
         if (!taskDefinitionArn)
             throw new Error("Task definition failed to register");
         core_1.info("Task Definition Registration Details:");
@@ -700,10 +702,10 @@ function getClient() {
     });
 }
 function readTaskDefinitionTemplate(input) {
-    const { templatePath } = input;
-    if (!templatePath || !fs.existsSync(templatePath))
+    const { template } = input;
+    if (!template || !fs.existsSync(template))
         return;
-    const templateContents = fs.readFileSync(templatePath, "utf8");
+    const templateContents = fs.readFileSync(template, "utf8");
     return yaml_1.parse(templateContents);
 }
 function overrideContainerImages(definition, containerImages) {
@@ -731,13 +733,30 @@ function overrideEnvironmentVars(definition, environmentVars) {
         });
     }
 }
+function overrideSecrets(definition, secrets) {
+    const { containerDefinitions } = definition;
+    if (!secrets || !containerDefinitions)
+        return;
+    for (const [name, value] of Object.entries(secrets)) {
+        containerDefinitions.forEach((definition) => {
+            const { secrets } = definition;
+            if (!secrets)
+                return;
+            let variableDefinition = secrets.find((def) => def.name == name);
+            if (variableDefinition)
+                variableDefinition.valueFrom = value;
+        });
+    }
+}
 function processTaskDefinitionInput(input) {
-    const { family, containerImages, environmentVars } = input;
+    const { family, containerImages, environmentVars, secrets } = input;
     let taskDefinition = readTaskDefinitionTemplate(input);
     if (!taskDefinition)
         return;
     if (family)
         taskDefinition.family = family;
+    if (secrets)
+        overrideSecrets(taskDefinition, secrets);
     if (containerImages)
         overrideContainerImages(taskDefinition, containerImages);
     if (environmentVars)
